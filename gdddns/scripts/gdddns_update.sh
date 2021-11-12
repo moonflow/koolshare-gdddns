@@ -2,6 +2,8 @@
 
 eval `dbus export gdddns_`
 
+source /koolshare/scripts/base.sh
+
 if [ "$gdddns_enable" != "1" ]; then
     echo "not enable"
     exit
@@ -43,34 +45,29 @@ die () {
 
 echo "start gdddns"
 
-while true
-do
+now=`date '+%Y-%m-%d %H:%M:%S'`
+ip=`$gdddns_curl 2>&1` || die "$ip"
 
-  now=`date '+%Y-%m-%d %H:%M:%S'`
-  ip=`$gdddns_curl 2>&1` || die "$ip"
+[ "$gdddns_curl" = "" ] && gdddns_curl="curl -s whatismyip.akamai.com"
+[ "$gdddns_dns" = "" ] && gdddns_dns="114.114.114.114"
+[ "$gdddns_ttl" = "" ] && gdddns_ttl="600"
 
-  [ "$gdddns_curl" = "" ] && gdddns_curl="curl -s whatismyip.akamai.com"
-  [ "$gdddns_dns" = "" ] && gdddns_dns="114.114.114.114"
-  [ "$gdddns_ttl" = "" ] && gdddns_ttl="600"
+echo "do gdddns"
 
-  echo "do gdddns"
-
-  if [ "$?" -eq "0" ]; then
-      current_ip=`record_response | grep -oE '([0-9]{1,3}\.?){4}'|head -n 1`
-      if [ "$ip" = "$current_ip" ]; then
-          echo "skipping"
-  #                new_ip=`record_response | grep -oE '([0-9]{1,3}\.?){4}'|head -n 1`
-          dbus set gdddns_last_act="$now: skipping,router IP:($ip),A record IP:($current_ip)"
-      else
-          echo "changing"
-          update_record
-                  new_ip=`record_response | grep -oE '([0-9]{1,3}\.?){4}'|head -n 1`
-             if [ "$new_ip" = "$ip" ]; then
-              dbus set gdddns_last_act="$now: update success,router IP:($ip),A record IP:($new_ip)"
-              else
-              dbus set gdddns_last_act="$now: updata failed!pleace check"
-             fi
-      fi
-  fi
-  sleep `dbus get gdddns_interval`
-done
+if [ "$?" -eq "0" ]; then
+    current_ip=`record_response | grep -oE '([0-9]{1,3}\.?){4}'|head -n 1`
+    if [ "$ip" = "$current_ip" ]; then
+        echo "skipping"
+#                new_ip=`record_response | grep -oE '([0-9]{1,3}\.?){4}'|head -n 1`
+        dbus set gdddns_last_act="$now: skipping,router IP:($ip),A record IP:($current_ip)"
+    else
+        echo "changing"
+        update_record
+                new_ip=`record_response | grep -oE '([0-9]{1,3}\.?){4}'|head -n 1`
+           if [ "$new_ip" = "$ip" ]; then
+            dbus set gdddns_last_act="$now: update success,router IP:($ip),A record IP:($new_ip)"
+            else
+            dbus set gdddns_last_act="$now: updata failed!pleace check"
+           fi
+    fi
+fi
