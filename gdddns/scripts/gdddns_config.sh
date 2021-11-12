@@ -1,7 +1,8 @@
 #!/bin/sh
 
 if [ "`dbus get gdddns_enable`" == "1" ]; then
-    dbus delay gdddns_timer `dbus get gdddns_interval` /koolshare/scripts/gdddns_update.sh
+    ps | grep 'gdddns_update' | grep -v grep | awk '{print $1}' | xargs kill -9
+    /koolshare/scripts/gdddns_update.sh &
 else
-    dbus remove __delay__gdddns_timer
+    ps | grep 'gdddns_update' | grep -v grep | awk '{print $1}' | xargs kill -9
 fi
